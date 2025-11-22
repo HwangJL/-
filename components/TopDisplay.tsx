@@ -54,9 +54,20 @@ const TopDisplay: React.FC<TopDisplayProps> = ({ step, scene, style, result, loa
         {step === AppStep.GENERATION_RESULT && result && (
             <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 animate-fade-in">
                 {result.images.map((imgUrl, index) => (
-                    <div key={index} className="relative aspect-square rounded-xl overflow-hidden shadow-md border-2 border-white hover:scale-105 transition-transform">
+                    <div key={index} className="relative aspect-square rounded-xl overflow-hidden shadow-md border-2 border-white hover:scale-105 transition-transform group">
                         <img src={imgUrl} alt={`Suggestion ${index + 1}`} className="w-full h-full object-cover" />
-                        <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
+                        
+                        {/* Rule of Thirds Grid Overlay */}
+                        <div className="absolute inset-0 pointer-events-none z-10">
+                            {/* Vertical Lines */}
+                            <div className="absolute left-1/3 top-0 bottom-0 w-px border-l border-dashed border-white/60 drop-shadow-md"></div>
+                            <div className="absolute left-2/3 top-0 bottom-0 w-px border-l border-dashed border-white/60 drop-shadow-md"></div>
+                            {/* Horizontal Lines */}
+                            <div className="absolute top-1/3 left-0 right-0 h-px border-t border-dashed border-white/60 drop-shadow-md"></div>
+                            <div className="absolute top-2/3 left-0 right-0 h-px border-t border-dashed border-white/60 drop-shadow-md"></div>
+                        </div>
+
+                        <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm z-20">
                             方案 {index + 1}
                         </div>
                     </div>
