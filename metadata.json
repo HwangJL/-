@@ -1,0 +1,5 @@
+{
+  "name": "PoseMaster AI",
+  "description": "智能摄影构图与站位推荐助手，利用Gemini Nano Banana生图能力提供场景、风格与动作指导。",
+  "requestFramePermissions": []
+}
