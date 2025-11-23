@@ -88,92 +88,94 @@ export const generateImage = async (prompt: string): Promise<string> => {
   }
 };
 
+const COMPOSITION_TYPES = [
+  { key: 'center', label: '对称/中心构图', prompt: 'Symmetrical center composition, balanced and stable.' },
+  { key: 'thirds', label: '三分法构图', prompt: 'Rule of thirds composition, subject off-center.' },
+  { key: 'diagonal', label: '对角线动态', prompt: 'Diagonal lines composition, dynamic and energetic.' },
+  { key: 'low_angle', label: '低角度仰拍', prompt: 'Low angle shot looking up, imposing and tall.' },
+  { key: 'close_up', label: '情绪特写', prompt: 'Close-up shot, focus on emotion and details.' },
+  { key: 'wide', label: '广角环境', prompt: 'Wide angle environmental shot, showing the scene scale.' },
+];
+
 /**
- * Generates 3 composition images based on the scene and style.
+ * Generates 6 composition images and corresponding advice.
  */
-export const generateCompositions = async (
+export const generatePhotoGuide = async (
   sceneUrl: string,
+  sceneDesc: string,
   numPeople: number,
-  styleDescription: string
-): Promise<string[]> => {
+  styleDesc: string
+): Promise<{ image: string; advice: string; label: string }[]> => {
   const ai = getAiClient();
   
   const imagePart = await prepareImageForApi(sceneUrl);
-  
-  // Define 3 variations of prompts for variety
-  const prompts = [
-    `Create a photorealistic composite image based on the provided scene. Add ${numPeople} model(s) wearing ${styleDescription}. Pose: Natural and casual standing pose. Maintain the background details.`,
-    `Create a photorealistic composite image based on the provided scene. Add ${numPeople} model(s) wearing ${styleDescription}. Pose: Dynamic interaction with the environment (e.g. walking or sitting). Maintain the background details.`,
-    `Create a photorealistic composite image based on the provided scene. Add ${numPeople} model(s) wearing ${styleDescription}. Pose: Artistic composition, close-up or interesting angle. Maintain the background details.`
-  ];
 
   try {
-    // Execute in parallel
-    const promises = prompts.map(async (prompt) => {
-        const response = await ai.models.generateContent({
+    const promises = COMPOSITION_TYPES.map(async (type) => {
+        // 1. Generate Image
+        const imgPrompt = `Create a photorealistic composite image. ${type.prompt} Based on the provided scene. Add ${numPeople} model(s) wearing ${styleDesc}. Maintain the background details. High quality.`;
+        
+        const imgPromise = ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
             contents: {
                 parts: [
                     imagePart,
-                    { text: prompt }
+                    { text: imgPrompt }
                 ]
             }
-        });
-        
-        for (const part of response.candidates?.[0]?.content?.parts || []) {
-            if (part.inlineData) {
-                return `data:image/png;base64,${part.inlineData.data}`;
+        }).then(res => {
+            for (const part of res.candidates?.[0]?.content?.parts || []) {
+                if (part.inlineData) return `data:image/png;base64,${part.inlineData.data}`;
             }
-        }
-        return null;
+            return null;
+        }).catch(e => {
+            console.error(`Error generating image for ${type.key}:`, e);
+            return null;
+        });
+
+        // 2. Generate Advice
+        // Expanded prompt for comprehensive photography advice
+        const advicePrompt = `
+          作为一名专业摄影师，请针对以下情况提供详细的中文拍摄指导。
+          场景：${sceneDesc}
+          人数：${numPeople}人
+          风格：${styleDesc}
+          构图方式：${type.label} (${type.prompt})
+          
+          请按以下格式清晰输出（包含emoji）：
+          📍 **站位**：[简短具体的站位建议]
+          💃 **动作**：[动作与表情指导]
+          📐 **角度**：[推荐的拍摄角度与机位高度]
+          💡 **光线**：[光线运用建议]
+          🖼️ **构图**：[为什么要这样构图的技巧解析]
+
+          保持语气专业且富有鼓励性，总字数控制在150字以内。
+        `;
+        
+        const advicePromise = ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: { parts: [{ text: advicePrompt }] }
+        }).then(res => res.text || "暂无建议").catch(() => "暂无建议");
+
+        const [img, advice] = await Promise.all([imgPromise, advicePromise]);
+        
+        return {
+            image: img,
+            advice: advice,
+            label: type.label
+        };
     });
 
     const results = await Promise.all(promises);
-    const validResults = results.filter(url => url !== null) as string[];
+    const validResults = results.filter(r => r.image !== null) as { image: string; advice: string; label: string }[];
     
     if (validResults.length === 0) {
         throw new Error("Failed to generate any composition images.");
     }
     return validResults;
+
   } catch (error) {
     console.error("Error generating compositions:", error);
     throw error;
-  }
-};
-
-/**
- * Generates posing and composition advice based on text metadata.
- */
-export const generateAdvice = async (sceneDesc: string, numPeople: number, styleDesc: string): Promise<string> => {
-  const ai = getAiClient();
-  
-  const prompt = `
-    作为一名专业摄影师，请根据以下信息提供拍摄建议：
-    场景：${sceneDesc}
-    人数：${numPeople}人
-    风格：${styleDesc}
-    
-    请用中文给出：
-    1. 针对此场景和风格的推荐站位。
-    2. 具体的动作与表情指导。
-    3. 提升照片氛围感的构图技巧。
-    
-    回答请简洁明了，语气专业亲切，不要超过200字。
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: {
-        parts: [
-          { text: prompt }
-        ]
-      }
-    });
-
-    return response.text || "暂无建议";
-  } catch (error) {
-    console.error("Error generating advice:", error);
-    return "抱歉，生成建议时出现错误。建议您根据光线和场景自然调整站位。";
   }
 };

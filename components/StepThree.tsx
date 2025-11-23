@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { SceneData, StyleData, ResultData } from '../types';
-import { generateCompositions, generateAdvice } from '../services/geminiService';
+import { generatePhotoGuide } from '../services/geminiService';
 import { Loader2, RefreshCw, RotateCcw } from 'lucide-react';
 
 interface StepThreeProps {
@@ -19,16 +19,16 @@ const StepThree: React.FC<StepThreeProps> = ({ scene, style, onComplete, setLoad
      const executeGeneration = async () => {
         setLoading(true);
         try {
-            // Parallel generation of images and advice
-            const imagesPromise = generateCompositions(scene.url, style.numPeople, style.description);
-            const advicePromise = generateAdvice(scene.description, style.numPeople, style.description);
-
-            const [images, advice] = await Promise.all([imagesPromise, advicePromise]);
+            const items = await generatePhotoGuide(
+                scene.url, 
+                scene.description, 
+                style.numPeople, 
+                style.description
+            );
 
             const result: ResultData = {
                 id: `res-${Date.now()}`,
-                images: images,
-                adviceText: advice,
+                items: items,
                 createdAt: Date.now()
             };
             onComplete(result);
@@ -49,8 +49,8 @@ const StepThree: React.FC<StepThreeProps> = ({ scene, style, onComplete, setLoad
       return (
           <div className="flex flex-col items-center justify-center min-h-[300px] animate-fade-in">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-              <h2 className="text-xl font-semibold text-slate-800">正在为您构图...</h2>
-              <p className="text-slate-500 mt-2">AI 正在结合场景与人物风格，并生成3种推荐方案</p>
+              <h2 className="text-xl font-semibold text-slate-800">正在为您定制拍摄方案...</h2>
+              <p className="text-slate-500 mt-2">AI 正在生成6种不同构图与专业指导</p>
           </div>
       );
   }
@@ -59,7 +59,7 @@ const StepThree: React.FC<StepThreeProps> = ({ scene, style, onComplete, setLoad
     <div className="max-w-3xl mx-auto p-4 text-center animate-fade-in">
         <div className="mb-8">
             <h2 className="text-2xl font-bold text-slate-800 mb-2">生成完成！</h2>
-            <p className="text-slate-600">3张推荐构图已生成，建议已显示在上方。</p>
+            <p className="text-slate-600">6张推荐构图已生成，点击上方图片查看详细建议。</p>
         </div>
         
         <div className="flex gap-4 justify-center">

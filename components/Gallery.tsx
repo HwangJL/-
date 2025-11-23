@@ -25,16 +25,20 @@ const Gallery: React.FC<GalleryProps> = ({ history }) => {
       <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-hide px-2">
         {history.slice().reverse().map((item, idx) => (
           <div key={item.result.id} className="flex-shrink-0 flex gap-1 bg-slate-50 p-1 rounded-lg border border-slate-100">
-            {item.result.images.map((imgUrl, imgIdx) => (
+            {item.result.items.map((generatedItem, imgIdx) => (
                 <div key={`${item.result.id}-${imgIdx}`} className="w-20 h-20 relative group rounded overflow-hidden">
-                    <img src={imgUrl} alt="Result" className="w-full h-full object-cover" />
+                    <img src={generatedItem.image} alt={generatedItem.label} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <button 
-                            onClick={() => handleDownload(imgUrl)}
+                            onClick={() => handleDownload(generatedItem.image)}
                             className="text-white hover:text-primary p-1"
+                            title="下载"
                         >
                             <Download size={14} />
                         </button>
+                    </div>
+                    <div className="absolute bottom-0 w-full text-[8px] text-white bg-black/50 text-center truncate px-1">
+                        {generatedItem.label}
                     </div>
                 </div>
             ))}

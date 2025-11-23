@@ -20,10 +20,15 @@ export interface StyleData {
   type: 'preset' | 'generated';
 }
 
+export interface GeneratedItem {
+  image: string;
+  advice: string;
+  label: string;
+}
+
 export interface ResultData {
   id: string;
-  images: string[]; // Changed from imageUrl to images array
-  adviceText: string;
+  items: GeneratedItem[]; 
   createdAt: number;
 }
 
